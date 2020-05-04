@@ -24,7 +24,7 @@
 
 <svelte:head>
 	<title>All About Space</title>
-	{@html `<style> body { background: url("${dailyImage.url}") center center no-repeat; background-size: cover;}</style>`}
+	{@html `<style> body { background: url("${dailyImage.url}") center center no-repeat fixed; background-size: cover;}</style>`}
 </svelte:head>
 
 <Nav {segment} bind:menuActive/>

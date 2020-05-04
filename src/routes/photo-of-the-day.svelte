@@ -1,16 +1,26 @@
 <script>
+	import { fade } from 'svelte/transition';
+	import Loader from '../components/Loader.svelte';
 	import {getContext} from 'svelte';
 	import { format, parseISO } from 'date-fns'
-
-	let dailyImage = getContext('dailyImage');
 
 	let todaysDate =  format(new Date(), 'y-MM-dd');
 	let selectedDate = todaysDate;
 
+	async function getPhotoOfTheDay() {
+		let data = "";
+		if (selectedDate !== todaysDate) {
+			let response = await fetch(`http://localhost:3001/image-of-the-day/` + selectedDate);
+			data = await response.json();
+		} else {
+			console.log("use in memory data");
+			data = getContext('dailyImage');
+		}
+		return data;
+	}
+
+	$: imageData = getPhotoOfTheDay(selectedDate);
 	$: formattedDate = format(parseISO(selectedDate), 'MMMM d, y')
-
-	// Make api call to get new image....
-
 </script>
 
 <svelte:head>
@@ -18,19 +28,34 @@
 </svelte:head>
 
 <div id="content">
-	<p>{selectedDate}</p>
 	<h1>Photo of the day on {formattedDate}</h1>
-	<p>Choose a day to see the photo of the day for that date:
+	<p class="instructions">Choose a day to see the photo of the day for that date:
 		<input type="date" bind:value="{selectedDate}" max="{todaysDate}" >
 	</p>
 
-	<div class="image-result">
-		<h2>{dailyImage.title}</h2>
-		<p>
-			<img src="{dailyImage.url}" alt="{dailyImage.title}" title="{dailyImage.title}"/>
-			{dailyImage.explanation}
-		</p>
-	</div>
+	{#if imageData===""}
+
+		<p>error.. no data for the selected date</p>
+
+	{:else}
+
+		{#await imageData}
+			<Loader show="true"/>
+		{:then imageData}
+			<div class="image-result" transition:fade="{{duration: 300}}">
+				<h2>{imageData.title}</h2>
+				<p>
+					<img src="{imageData.url}" alt="{imageData.title}" title="{imageData.title}"/>
+					{imageData.explanation}
+				</p>
+			</div>
+		{:catch error}
+
+		{error.message}
+
+		{/await}
+
+	{/if}
 </div>
 
 <style lang="stylus">
@@ -41,6 +66,18 @@
 		width: 75%;
 		margin: 0 auto;
 		padding: 1rem 2rem;
+
+		&:after {
+			clear: both;
+			content: "";
+			display: block;
+			width: 100%;
+		}
+	}
+
+	.instructions {
+		border-bottom: 1px solid gray;
+		padding-bottom: 2rem;
 	}
 
 	input {
